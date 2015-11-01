@@ -169,7 +169,7 @@ public class BranchAndBound implements Algorithm {
         final int[][] matrix = {
                 {INF, 3, 4, 2, 7},
                 {3, INF, 4, 6, 3},
-                {4, 4, INF, 5, 5},
+                {4, 4, INF, 5, 8},
                 {2, 6, 5, INF, 6},
                 {7, 3, 8, 6, INF}
         };
