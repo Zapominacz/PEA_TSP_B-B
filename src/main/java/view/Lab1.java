@@ -1,6 +1,10 @@
 package view;
 
+import algoritms.BranchAndBound;
+
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
@@ -31,6 +35,16 @@ public class Lab1 extends JFrame implements WindowListener {
         pack();
         addWindowListener(this);
         setVisible(true);
+        setListeners();
+    }
+
+    private void setListeners() {
+        branchAndBoundButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new BranchAndBound().performAlgorithm(null);
+            }
+        });
     }
 
 

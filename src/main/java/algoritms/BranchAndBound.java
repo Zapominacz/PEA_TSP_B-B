@@ -10,6 +10,7 @@ public class BranchAndBound implements Algorithm {
 
     private NodeList nodePool;
     private Node bestSolution;
+    private int[][] baseMatrix;
 
     public BranchAndBound() {
 
@@ -21,9 +22,12 @@ public class BranchAndBound implements Algorithm {
         do {
             final float upperBound = getUpperBound();
             final Node currentNode = nodePool.popBestAndRemoveWorseThan(upperBound);
+            if (currentNode == null) {
+                continue;
+            }
             if(currentNode.leftChild) {
                 currentNode.lowerBound = 0;
-                computeLowerBandFor(currentNode);
+                computeLowerBoundFor(currentNode);
             }
             branch(currentNode);
         } while (!nodePool.isEmpty());
@@ -51,11 +55,33 @@ public class BranchAndBound implements Algorithm {
         childWithEdge.reduced = null;
         markAsTaken(point, childWithEdge);
         int addedEdges = removeCyclesAndAddEdge(childWithEdge, point);
-        computeLowerBandFor(childWithEdge);
-        if(addedEdges + 2 < childWithEdge.solution.length) {
-            bestSolution = childWithEdge;
-        } else if(bestSolution == null || childWithEdge.lowerBound < bestSolution.lowerBound) {
+        computeLowerBoundFor(childWithEdge);
+        if (addedEdges + 2 == childWithEdge.solution.length) {
+            obtainSolution(childWithEdge);
+        } else if (bestSolution == null || childWithEdge.lowerBound < getUpperBound()) {
             nodePool.insert(childWithEdge);
+        }
+    }
+
+    private void obtainSolution(Node node) {
+        int edgeCount = node.solution.length - 2;
+        for (int row = 0; row < node.original.length; row++) {
+            for (int col = 0; col < node.original.length; col++) {
+                if (node.original[row][col] < INF) {
+                    Edge tmp = new Edge();
+                    tmp.startVertex = row;
+                    tmp.endVertex = col;
+                    node.solution[edgeCount] = tmp;
+                    edgeCount++;
+                }
+            }
+        }
+        int upperBound = 0;
+        for (Edge edge : node.solution) {
+            upperBound += baseMatrix[edge.startVertex][edge.endVertex];
+        }
+        if (bestSolution == null || bestSolution.lowerBound > upperBound) {
+            bestSolution = node;
         }
     }
 
@@ -76,6 +102,7 @@ public class BranchAndBound implements Algorithm {
             Edge edge = childWithEdge.solution[edgeCount];
             if(edge == null) {
                 childWithEdge.solution[edgeCount] = point;
+                childWithEdge.union(point.startVertex, point.endVertex);
                 break;
             } else {
                 if(edge.startVertex == point.endVertex) {
@@ -86,13 +113,14 @@ public class BranchAndBound implements Algorithm {
                 addedEdges++;
             }
         }
+        int setNumber = childWithEdge.nodeUnion[point.startVertex];
         if(Utils.xor(startConnected, endConnected)) {
             for (int edgeCount = 0; edgeCount < addedEdges; edgeCount++) {
                 Edge edge = childWithEdge.solution[edgeCount];
-                if(startConnected) {
-                    childWithEdge.original[edge.startVertex][point.endVertex] = INF;
-                } else {
-                    childWithEdge.original[point.startVertex][edge.endVertex] = INF;
+                if (startConnected && childWithEdge.nodeUnion[edge.endVertex] == setNumber) {
+                    childWithEdge.original[point.endVertex][edge.startVertex] = INF;
+                } else if (childWithEdge.nodeUnion[edge.startVertex] == setNumber) {
+                    childWithEdge.original[edge.endVertex][point.startVertex] = INF;
                 }
             }
         }
@@ -105,8 +133,10 @@ public class BranchAndBound implements Algorithm {
         childWithoutEdge.lowerBound = edgeCost + currentNode.lowerBound;
         childWithoutEdge.solution = new Edge[currentNode.solution.length];
         System.arraycopy(currentNode.solution, 0, childWithoutEdge.solution, 0, currentNode.solution.length);
+        childWithoutEdge.nodeUnion = new int[currentNode.solution.length];
+        System.arraycopy(currentNode.nodeUnion, 0, childWithoutEdge.nodeUnion, 0, currentNode.nodeUnion.length);
         boolean possibleSolution = checkPossibilityForLeftChild(point, currentNode);
-        if(possibleSolution && (bestSolution == null || childWithoutEdge.lowerBound < bestSolution.lowerBound)) {
+        if (possibleSolution && (bestSolution == null || childWithoutEdge.lowerBound < getUpperBound())) {
             nodePool.insert(childWithoutEdge);
         }
     }
@@ -136,13 +166,33 @@ public class BranchAndBound implements Algorithm {
     }
 
     private void prepareAlgorithm(final TspMap entryMap) {
-        Node node = new Node(entryMap.getMatrix());
-        node.solution = new Edge[entryMap.getSize()];
-        computeLowerBandFor(node);
+        final int[][] matrix2 = {
+                {INF, 3, 4, 2, 7},
+                {3, INF, 4, 6, 3},
+                {4, 4, INF, 5, 5},
+                {2, 6, 5, INF, 6},
+                {7, 3, 8, 6, INF}
+        };
+        final int[][] matrix = {
+                {INF, 27, 43, 16, 30, 26},
+                {7, INF, 16, 1, 30, 25},
+                {20, 13, INF, 35, 5, 0},
+                {21, 16, 25, INF, 18, 18},
+                {12, 46, 27, 48, INF, 5},
+                {23, 5, 5, 9, 5, INF}
+        };
+        baseMatrix = Utils.cloneArray(matrix);
+        Node node = new Node(matrix);
+        node.solution = new Edge[matrix.length];
+        node.nodeUnion = new int[matrix.length];
+        for (int i = 0; i < node.nodeUnion.length; i++) {
+            node.nodeUnion[i] = i;
+        }
+        computeLowerBoundFor(node);
         nodePool = new NodeList(node);
     }
 
-    private void computeLowerBandFor(Node node) {
+    private void computeLowerBoundFor(Node node) {
         node.reduced = Utils.cloneArray(node.original);
         node.lowerBound += rowReduction(node.reduced);
         node.lowerBound += columnReduction(node.reduced);
@@ -153,13 +203,15 @@ public class BranchAndBound implements Algorithm {
         for(int row = 0; row < matrix.length; row++) {
             for(int col = 0; col < matrix.length; col++) {
                 if(matrix[row][col] == 0) {
-                    Edge tmp = new Edge();
-                    tmp.startVertex = Utils.rowMin(matrix, row);
-                    tmp.endVertex = Utils.columnMin(matrix, col);
-                    tmp.weight = matrix[tmp.startVertex][tmp.endVertex];
-                    if(tmp.weight > result.weight) {
-                        result = tmp;
+                    matrix[row][col] = INF;
+                    int edgeCost = Utils.rowMin(matrix, row);
+                    edgeCost += Utils.columnMin(matrix, col);
+                    if (edgeCost > result.weight) {
+                        result.startVertex = row;
+                        result.endVertex = col;
+                        result.weight = edgeCost;
                     }
+                    matrix[row][col] = 0;
                 }
             }
         }
@@ -175,10 +227,12 @@ public class BranchAndBound implements Algorithm {
         int result = 0;
         for(int col = 0; col < matrix.length; col++) {
             int colMin = Utils.columnMin(matrix, col);
-            result += colMin;
-            for(int row = 0; row < matrix.length; row++) {
-                if(matrix[row][col] < INF) {
-                    matrix[row][col] -= colMin;
+            if (colMin != INF) {
+                result += colMin;
+                for (int row = 0; row < matrix.length; row++) {
+                    if (matrix[row][col] < INF) {
+                        matrix[row][col] -= colMin;
+                    }
                 }
             }
         }
@@ -189,10 +243,12 @@ public class BranchAndBound implements Algorithm {
         int result = 0;
         for(int row = 0; row < matrix.length; row++) {
             int rowMin = Utils.rowMin(matrix, row);
-            result += rowMin;
-            for(int col = 0; col < matrix.length; col++) {
-                if(matrix[row][col] < INF) {
-                    matrix[row][col] -= rowMin;
+            if (rowMin != INF) {
+                result += rowMin;
+                for (int col = 0; col < matrix.length; col++) {
+                    if (matrix[row][col] < INF) {
+                        matrix[row][col] -= rowMin;
+                    }
                 }
             }
         }

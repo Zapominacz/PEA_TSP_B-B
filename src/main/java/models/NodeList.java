@@ -1,7 +1,6 @@
 package models;
 
 import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
 
 /**
  * Created by Quantum on 2015-10-27.
@@ -15,25 +14,33 @@ public class NodeList {
     }
 
     public Node popBestAndRemoveWorseThan(float upperBound) {
-        ListNode best = first;
+        ListNode best = null;
         ListNode current = first;
         while(current != null) {
-            ListNode next = current.next;
-            if(next.node.lowerBound < best.node.lowerBound) {
-                best = next;
-            } else if(upperBound <= next.node.lowerBound) {
-                remove(next);
-                next = current.next;
+            if (upperBound <= current.node.lowerBound) {
+                remove(current);
+            } else if (best == null || current.node.lowerBound < best.node.lowerBound) {
+                best = current;
             }
-            current = next;
+            current = current.next;
         }
-        remove(best);
-        return best.node;
+        if (best != null) {
+            remove(best);
+            return best.node;
+        } else {
+            return null;
+        }
     }
 
     private void remove(ListNode node) {
-        node.previous.next = node.next;
-        node.next.previous = node.previous;
+        if (node.previous != null) {
+            node.previous.next = node.next;
+        } else {
+            first = node.next;
+        }
+        if (node.next != null) {
+            node.next.previous = node.previous;
+        }
     }
 
     public boolean isEmpty() {
@@ -42,8 +49,13 @@ public class NodeList {
 
     public void insert(Node node) {
         ListNode newListNode = new ListNode(node);
-        newListNode.next = first;
-        first = newListNode;
+        if (first == null) {
+            first = newListNode;
+        } else {
+            first.previous = newListNode;
+            newListNode.next = first;
+            first = newListNode;
+        }
     }
 
     public static class ListNode {
