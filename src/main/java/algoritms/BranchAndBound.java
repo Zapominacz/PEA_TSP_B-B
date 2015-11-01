@@ -166,14 +166,14 @@ public class BranchAndBound implements Algorithm {
     }
 
     private void prepareAlgorithm(final TspMap entryMap) {
-        final int[][] matrix2 = {
+        final int[][] matrix = {
                 {INF, 3, 4, 2, 7},
                 {3, INF, 4, 6, 3},
                 {4, 4, INF, 5, 5},
                 {2, 6, 5, INF, 6},
                 {7, 3, 8, 6, INF}
         };
-        final int[][] matrix = {
+        final int[][] matrix2 = {
                 {INF, 27, 43, 16, 30, 26},
                 {7, INF, 16, 1, 30, 25},
                 {20, 13, INF, 35, 5, 0},

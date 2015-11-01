@@ -21,9 +21,11 @@ public class Node {
     }
 
     public int union(int v1, int v2) {
-        int number = Math.min(v1, v2);
+        int cls1 = nodeUnion[v1];
+        int cls2 = nodeUnion[v2];
+        int number = Math.min(cls1, cls2);
         for (int i = 0; i < nodeUnion.length; i++) {
-            if (nodeUnion[i] == v1 || nodeUnion[i] == v2) {
+            if (nodeUnion[i] == cls1 || nodeUnion[i] == cls2) {
                 nodeUnion[i] = number;
             }
         }
