@@ -1,39 +1,24 @@
 package algoritms;
 
 
-import models.TspEdge;
-import models.TspMap;
-
 /**
  * Created by Quantum on 2015-10-12.
  */
-public class FullCheck implements Algorithm {
+public class FullCheck {
 
     private int[] bestCityOrder;
     private int currentBestCost;
-    private TspMap baseMap;
-    private TspMap lastResult;
+    private int[][] baseMap;
 
-    @Override
-    public TspMap performAlgorithm(final TspMap map) {
+    public int[] performAlgorithm(final int[][] map) {
         prepareForAlgorithm(map);
         int[] cityOrder = makeFirstPermutation();
         permuteCities(cityOrder, 0);
-        writeBestResultToMap();
-        return lastResult;
-    }
-
-    private void writeBestResultToMap() {
-        final int cityCount = bestCityOrder.length;
-        lastResult = new TspMap(baseMap.getEdgeCount(), baseMap.isSymmetric());
-        lastResult.add(baseMap.get(bestCityOrder[cityCount- 1], bestCityOrder[0]));
-        for (int i = 1; i < cityCount; i++) {
-            lastResult.add(baseMap.get(bestCityOrder[i - 1], bestCityOrder[i]));
-        }
+        return bestCityOrder;
     }
 
     private int[] makeFirstPermutation() {
-        final int cityCount = baseMap.getEdgeCount();
+        final int cityCount = baseMap.length;
         int[] result = new int[cityCount];
         for (int i = 0; i < cityCount; i++) {
             result[i] = i;
@@ -42,9 +27,9 @@ public class FullCheck implements Algorithm {
         return result;
     }
 
-    private void prepareForAlgorithm(TspMap map) {
+    private void prepareForAlgorithm(int[][] map) {
         baseMap = map;
-        bestCityOrder = new int[map.getEdgeCount()];
+        bestCityOrder = new int[map.length];
         currentBestCost = Integer.MAX_VALUE;
     }
 
@@ -68,16 +53,16 @@ public class FullCheck implements Algorithm {
 
     private void checkIsBetterPermutation(int[] cityOrder) {
         int totalCost = 0;
-        TspEdge edge = baseMap.get(cityOrder[cityOrder.length - 1], cityOrder[0]);
-        if (edge.isExist()) {
-            totalCost += edge.getWeight();
-        } else { //Nie ma po³¹czenia
+        int edgeCost = baseMap[cityOrder[cityOrder.length - 1]][cityOrder[0]];
+        if (edgeCost > 0) {
+            totalCost += edgeCost;
+        } else {
             return;
         }
         for (int i = 1; i < cityOrder.length; i++) {
-            edge = baseMap.get(cityOrder[i - 1], cityOrder[i]);
-            if (edge.isExist()) {
-                totalCost += edge.getWeight();
+            edgeCost = baseMap[cityOrder[i - 1]][cityOrder[i]];
+            if (edgeCost > 0) {
+                totalCost += edgeCost;
             } else {
                 return;
             }
@@ -87,11 +72,5 @@ public class FullCheck implements Algorithm {
             System.arraycopy(cityOrder, 0, bestCityOrder, 0, cityOrder.length);
         }
     }
-
-    @Override
-    public TspMap getResult() {
-        return lastResult;
-    }
-
 
 }

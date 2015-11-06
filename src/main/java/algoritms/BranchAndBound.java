@@ -3,10 +3,11 @@ package algoritms;
 import models.Edge;
 import models.Node;
 import models.NodeList;
-import models.TspMap;
 import tools.Utils;
 
-public class BranchAndBound implements Algorithm {
+public class BranchAndBound {
+
+    public static final int INF = Integer.MAX_VALUE;
 
     private NodeList nodePool;
     private Node bestSolution;
@@ -16,8 +17,8 @@ public class BranchAndBound implements Algorithm {
 
     }
 
-    @Override
-    public TspMap performAlgorithm(final TspMap mapEntry) {
+
+    public int[] performAlgorithm(final int[][] mapEntry) {
         prepareAlgorithm(mapEntry);
         do {
             final float upperBound = getUpperBound();
@@ -31,7 +32,25 @@ public class BranchAndBound implements Algorithm {
             }
             branch(currentNode);
         } while (!nodePool.isEmpty());
-        return getResult();
+        return prepareSolution();
+    }
+
+    private int[] prepareSolution() {
+        int size = bestSolution.solution.length;
+        int[] result = new int[size];
+        Edge edge = bestSolution.solution[0];
+        result[0] = edge.startVertex;
+        result[1] = edge.endVertex;
+        for (int i = 2; i < size; i++) {
+            int last = result[i - 1];
+            for (int j = 1; j < size; j++) {
+                Edge tmp = bestSolution.solution[j];
+                if (tmp.startVertex == last) {
+                    result[i] = tmp.endVertex;
+                }
+            }
+        }
+        return result;
     }
 
     private float getUpperBound() {
@@ -165,22 +184,7 @@ public class BranchAndBound implements Algorithm {
         return point.weight;
     }
 
-    private void prepareAlgorithm(final TspMap entryMap) {
-        final int[][] matrix = {
-                {INF, 3, 4, 2, 7},
-                {3, INF, 4, 6, 3},
-                {4, 4, INF, 5, 8},
-                {2, 6, 5, INF, 6},
-                {7, 3, 8, 6, INF}
-        };
-        final int[][] matrix2 = {
-                {INF, 27, 43, 16, 30, 26},
-                {7, INF, 16, 1, 30, 25},
-                {20, 13, INF, 35, 5, 0},
-                {21, 16, 25, INF, 18, 18},
-                {12, 46, 27, 48, INF, 5},
-                {23, 5, 5, 9, 5, INF}
-        };
+    private void prepareAlgorithm(final int[][] matrix) {
         baseMatrix = Utils.cloneArray(matrix);
         Node node = new Node(matrix);
         node.solution = new Edge[matrix.length];
@@ -216,11 +220,6 @@ public class BranchAndBound implements Algorithm {
             }
         }
         return result;
-    }
-
-    @Override
-    public final TspMap getResult() {
-        return null;
     }
 
     private int columnReduction(final int[][] matrix) {
