@@ -63,15 +63,16 @@ public class BranchAndBound {
 
     private void branch(final Node currentNode) {
         final Edge point = computeExcluded(currentNode.reduced);
-        int edgeCost = getEdgeCost(point);
-        point.weight = getPointWeightAndMarkAsUsed(point, currentNode);
-        computeAndAddChildWithoutEdge(currentNode, point, edgeCost);
+        currentNode.original[point.startVertex][point.endVertex] = INF;
+        currentNode.reduced[point.startVertex][point.endVertex] = INF;
+        computeAndAddChildWithoutEdge(currentNode, point);
         computeAndAddChildWithEdge(currentNode, point);
     }
 
     private void computeAndAddChildWithEdge(final Node childWithEdge, Edge point) {
         childWithEdge.original = childWithEdge.reduced;
         childWithEdge.reduced = null;
+        childWithEdge.leftChild = false;
         markAsTaken(point, childWithEdge);
         int addedEdges = removeCyclesAndAddEdge(childWithEdge, point);
         computeLowerBoundFor(childWithEdge);
@@ -146,10 +147,10 @@ public class BranchAndBound {
         return ++addedEdges;
     }
 
-    public void computeAndAddChildWithoutEdge(final Node currentNode, Edge point, int edgeCost) {
+    public void computeAndAddChildWithoutEdge(final Node currentNode, Edge point) {
         Node childWithoutEdge = new Node(currentNode.original);
         childWithoutEdge.leftChild = true;
-        childWithoutEdge.lowerBound = edgeCost + currentNode.lowerBound;
+        childWithoutEdge.lowerBound = point.weight + currentNode.lowerBound;
         childWithoutEdge.solution = new Edge[currentNode.solution.length];
         System.arraycopy(currentNode.solution, 0, childWithoutEdge.solution, 0, currentNode.solution.length);
         childWithoutEdge.nodeUnion = new int[currentNode.solution.length];
@@ -174,11 +175,6 @@ public class BranchAndBound {
         return otherWaysIn > 0 && otherWaysOut > 0;
     }
 
-    private int getPointWeightAndMarkAsUsed(Edge point, Node node) {
-        int weight = node.original[point.startVertex][point.endVertex];
-        node.original[point.startVertex][point.endVertex] = INF;
-        return weight;
-    }
 
     private int getEdgeCost(Edge point) {
         return point.weight;
@@ -186,7 +182,7 @@ public class BranchAndBound {
 
     private void prepareAlgorithm(final int[][] matrix) {
         baseMatrix = Utils.cloneArray(matrix);
-        Node node = new Node(matrix);
+        Node node = new Node(Utils.cloneArray(matrix));
         node.solution = new Edge[matrix.length];
         node.nodeUnion = new int[matrix.length];
         for (int i = 0; i < node.nodeUnion.length; i++) {

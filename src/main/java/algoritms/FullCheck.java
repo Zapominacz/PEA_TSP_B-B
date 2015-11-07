@@ -35,7 +35,7 @@ public class FullCheck {
 
     private void swapCities(int[] cityOrder, int first, int second) {
         int tmp = cityOrder[first];
-        cityOrder[first] = second;
+        cityOrder[first] = cityOrder[second];
         cityOrder[second] = tmp;
     }
 
