@@ -40,14 +40,10 @@ public class FullCheck {
     }
 
     private void permuteCities(int[] cityOrder, int iteration) {
-        if (iteration == cityOrder.length) {
-            checkIsBetterPermutation(cityOrder);
-        } else {
-            for (int i = iteration; i < cityOrder.length; i++) {
-                swapCities(cityOrder, iteration, i);
-                permuteCities(cityOrder, i + 1);
-                swapCities(cityOrder, iteration, i);
-            }
+        for (int i = iteration; i < cityOrder.length; i++) {
+            swapCities(cityOrder, i, iteration);
+            permuteCities(cityOrder, iteration + 1);
+            swapCities(cityOrder, iteration, i);
         }
     }
 

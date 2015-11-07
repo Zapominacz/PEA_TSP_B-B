@@ -7,16 +7,14 @@ import algoritms.MapGenerator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.time.Duration;
-import java.time.Instant;
 
 /**
  * Created by Quantum on 2015-11-06.
  */
 public class Test {
     private final static int INF = Integer.MAX_VALUE;
-    private static final int REPETITIONS = 10;
-    private static final int[] SIZES = {15};
+    private static final int REPETITIONS = 100;
+    private static final int[] SIZES = {10, 100, 200, 500, 1000};
 
     private static final int[][] matrix1 = {
             {INF, 75, 52, 26, 68},
@@ -43,11 +41,11 @@ public class Test {
     };
 
     private static final int[][] matrix3 = {
-            {INF, 63, 41, 80, 22},
-            {77, INF, 47, 55, 33},
-            {83, 63, INF, 52, 12},
-            {8, 44, 51, INF, 58},
-            {62, 28, 4, 17, INF}
+            {INF, 94, 41, 91, 5},
+            {4, INF, 95, 89, 13},
+            {79, 2, INF, 93, 22},
+            {58, 41, 55, INF, 87},
+            {48, 97, 44, 82, INF}
     };
 
     private PrintWriter printWriter;
@@ -68,16 +66,21 @@ public class Test {
             int repetition = REPETITIONS;
             long bnbTime = 0;
             long fcTime = 0;
-            Instant startbab = Instant.now();
-            sol1 = branchAndBound.performAlgorithm(baseMap);
-            Instant endbab = Instant.now();
-            bnbTime += Duration.between(startbab, endbab).toNanos();
-            Instant startfc = Instant.now();
-            sol2 = fullCheck.performAlgorithm(baseMap);
-            Instant endfc = Instant.now();
-            fcTime += Duration.between(startfc, endfc).toNanos();
-            printWriter.write(size + " bnb " + ((double) bnbTime / (double) REPETITIONS) + " " + sol1 + "\n");
-            printWriter.write(size + " fc " + ((double) fcTime / (double) REPETITIONS) + " " + sol2 + "\n");
+            for (int j = 0; j < REPETITIONS; j++) {
+                long startbab = System.nanoTime();
+                sol1 = branchAndBound.performAlgorithm(baseMap);
+                long endbab = System.nanoTime();
+                bnbTime += endbab - startbab;
+                long startfc = System.nanoTime();
+                //sol2 = fullCheck.performAlgorithm(baseMap);
+                long endfc = System.nanoTime();
+                fcTime += endfc - startfc;
+//                for (int i = 0; i < sol1.length; i++) {
+//                    printWriter.write(sol1[i] + " " + sol2[i] + ", ");
+//                }
+            }
+            printWriter.write(size + " bnb " + ((double) bnbTime / (double) REPETITIONS) + "\n");
+            //printWriter.write(size + " fc " + ((double) fcTime / (double) REPETITIONS) + "\n");
             printWriter.flush();
         }
     }

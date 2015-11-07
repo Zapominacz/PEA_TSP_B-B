@@ -112,9 +112,9 @@ public class BranchAndBound {
         int setNumber = childWithEdge.union(point.startVertex, point.endVertex);
         int startV = point.startVertex;
         int endV = point.endVertex;
-        for (int edgeCount = 0; edgeCount < childWithEdge.added; edgeCount++) {
-            for (int edge2 = 0; edge2 < childWithEdge.added; edge2++) {
-                Edge edge = childWithEdge.solution[edgeCount];
+        for (int i = 0; i < childWithEdge.added; i++) {
+            for (int j = 0; j < childWithEdge.added; j++) {
+                Edge edge = childWithEdge.solution[j];
                 if (childWithEdge.nodeUnion[edge.startVertex] == setNumber) {
                     if (edge.endVertex == startV) {
                         startV = edge.startVertex;
