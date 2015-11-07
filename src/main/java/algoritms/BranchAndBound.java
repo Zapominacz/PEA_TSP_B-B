@@ -26,10 +26,6 @@ public class BranchAndBound {
             if (currentNode == null) {
                 continue;
             }
-            if(currentNode.leftChild) {
-                currentNode.lowerBound = 0;
-                computeLowerBoundFor(currentNode);
-            }
             branch(currentNode);
         } while (!nodePool.isEmpty());
         return prepareSolution();
@@ -62,21 +58,17 @@ public class BranchAndBound {
     }
 
     private void branch(final Node currentNode) {
-        final Edge point = computeExcluded(currentNode.reduced);
-        currentNode.original[point.startVertex][point.endVertex] = INF;
-        currentNode.reduced[point.startVertex][point.endVertex] = INF;
+        final Edge point = computeExcluded(currentNode.matrix);
+        currentNode.matrix[point.startVertex][point.endVertex] = INF;
         computeAndAddChildWithoutEdge(currentNode, point);
         computeAndAddChildWithEdge(currentNode, point);
     }
 
     private void computeAndAddChildWithEdge(final Node childWithEdge, Edge point) {
-        childWithEdge.original = childWithEdge.reduced;
-        childWithEdge.reduced = null;
-        childWithEdge.leftChild = false;
         markAsTaken(point, childWithEdge);
-        int addedEdges = removeCyclesAndAddEdge(childWithEdge, point);
+        removeCyclesAndAddEdge(childWithEdge, point);
         computeLowerBoundFor(childWithEdge);
-        if (addedEdges + 2 == childWithEdge.solution.length) {
+        if (childWithEdge.added + 2 == childWithEdge.solution.length) {
             obtainSolution(childWithEdge);
         } else if (bestSolution == null || childWithEdge.lowerBound < getUpperBound()) {
             nodePool.insert(childWithEdge);
@@ -85,9 +77,9 @@ public class BranchAndBound {
 
     private void obtainSolution(Node node) {
         int edgeCount = node.solution.length - 2;
-        for (int row = 0; row < node.original.length; row++) {
-            for (int col = 0; col < node.original.length; col++) {
-                if (node.original[row][col] < INF) {
+        for (int row = 0; row < node.matrix.length; row++) {
+            for (int col = 0; col < node.matrix.length; col++) {
+                if (node.matrix[row][col] < INF) {
                     Edge tmp = new Edge();
                     tmp.startVertex = row;
                     tmp.endVertex = col;
@@ -106,7 +98,7 @@ public class BranchAndBound {
     }
 
     private void markAsTaken(Edge point, Node childWithEdge) {
-        int[][] reduced = childWithEdge.original;
+        int[][] reduced = childWithEdge.matrix;
         for(int rowCol = 0; rowCol < reduced.length; rowCol++) {
             reduced[rowCol][point.endVertex] = INF;
             reduced[point.startVertex][rowCol] = INF;
@@ -114,47 +106,36 @@ public class BranchAndBound {
         reduced[point.endVertex][point.startVertex] = INF;
     }
 
-    private int removeCyclesAndAddEdge(Node childWithEdge, Edge point) {
-        int addedEdges = 0;
-        boolean startConnected = false;
-        boolean endConnected = false;
-        for(int edgeCount = 0; edgeCount < childWithEdge.solution.length; edgeCount++) {
-            Edge edge = childWithEdge.solution[edgeCount];
-            if(edge == null) {
-                childWithEdge.solution[edgeCount] = point;
-                childWithEdge.union(point.startVertex, point.endVertex);
-                break;
-            } else {
-                if(edge.startVertex == point.endVertex) {
-                    endConnected = true;
-                } else if (point.startVertex == edge.endVertex) {
-                    startConnected = true;
-                }
-                addedEdges++;
-            }
-        }
-        int setNumber = childWithEdge.nodeUnion[point.startVertex];
-        if(Utils.xor(startConnected, endConnected)) {
-            for (int edgeCount = 0; edgeCount < addedEdges; edgeCount++) {
+    private void removeCyclesAndAddEdge(Node childWithEdge, Edge point) {
+        childWithEdge.solution[childWithEdge.added] = point;
+        childWithEdge.added++;
+        int setNumber = childWithEdge.union(point.startVertex, point.endVertex);
+        int startV = point.startVertex;
+        int endV = point.endVertex;
+        for (int edgeCount = 0; edgeCount < childWithEdge.added; edgeCount++) {
+            for (int edge2 = 0; edge2 < childWithEdge.added; edge2++) {
                 Edge edge = childWithEdge.solution[edgeCount];
-                if (startConnected && childWithEdge.nodeUnion[edge.endVertex] == setNumber) {
-                    childWithEdge.original[point.endVertex][edge.startVertex] = INF;
-                } else if (childWithEdge.nodeUnion[edge.startVertex] == setNumber) {
-                    childWithEdge.original[edge.endVertex][point.startVertex] = INF;
+                if (childWithEdge.nodeUnion[edge.startVertex] == setNumber) {
+                    if (edge.endVertex == startV) {
+                        startV = edge.startVertex;
+                    }
+                    if (edge.startVertex == endV) {
+                        endV = edge.endVertex;
+                    }
                 }
             }
         }
-        return ++addedEdges;
+        childWithEdge.matrix[endV][startV] = INF;
     }
 
     public void computeAndAddChildWithoutEdge(final Node currentNode, Edge point) {
-        Node childWithoutEdge = new Node(currentNode.original);
-        childWithoutEdge.leftChild = true;
+        Node childWithoutEdge = new Node(Utils.cloneArray(currentNode.matrix));
         childWithoutEdge.lowerBound = point.weight + currentNode.lowerBound;
         childWithoutEdge.solution = new Edge[currentNode.solution.length];
         System.arraycopy(currentNode.solution, 0, childWithoutEdge.solution, 0, currentNode.solution.length);
         childWithoutEdge.nodeUnion = new int[currentNode.solution.length];
         System.arraycopy(currentNode.nodeUnion, 0, childWithoutEdge.nodeUnion, 0, currentNode.nodeUnion.length);
+        computeLowerBoundFor(childWithoutEdge);
         boolean possibleSolution = checkPossibilityForLeftChild(point, currentNode);
         if (possibleSolution && (bestSolution == null || childWithoutEdge.lowerBound < getUpperBound())) {
             nodePool.insert(childWithoutEdge);
@@ -165,10 +146,10 @@ public class BranchAndBound {
         int otherWaysIn = 0;
         int otherWaysOut = 0;
         for(int rowCol = 0; rowCol < node.solution.length; rowCol++) {
-            if(node.original[point.startVertex][rowCol] < INF) {
+            if (node.matrix[point.startVertex][rowCol] < INF) {
                 otherWaysOut++;
             }
-            if(node.original[rowCol][point.endVertex] < INF) {
+            if (node.matrix[rowCol][point.endVertex] < INF) {
                 otherWaysIn++;
             }
         }
@@ -193,9 +174,8 @@ public class BranchAndBound {
     }
 
     private void computeLowerBoundFor(Node node) {
-        node.reduced = Utils.cloneArray(node.original);
-        node.lowerBound += rowReduction(node.reduced);
-        node.lowerBound += columnReduction(node.reduced);
+        node.lowerBound += rowReduction(node.matrix);
+        node.lowerBound += columnReduction(node.matrix);
     }
 
     private Edge computeExcluded(int[][] matrix) {

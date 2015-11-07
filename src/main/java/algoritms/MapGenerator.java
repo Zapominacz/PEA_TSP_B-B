@@ -26,14 +26,11 @@ public class MapGenerator {
             for (int col = 0; col < size; col++) {
                 if (row == col) {
                     result[row][col] = Integer.MAX_VALUE;
-                    System.out.print(Integer.MAX_VALUE + " ");
                 } else {
                     int value = random.nextInt(maxWeight) + 1;
                     result[row][col] = value;
-                    System.out.print(value + " ");
                 }
             }
-            System.out.print('\n');
         }
         return result;
     }

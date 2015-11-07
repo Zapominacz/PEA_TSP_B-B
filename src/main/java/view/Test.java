@@ -16,7 +16,7 @@ import java.time.Instant;
 public class Test {
     private final static int INF = Integer.MAX_VALUE;
     private static final int REPETITIONS = 10;
-    private static final int[] SIZES = {5};
+    private static final int[] SIZES = {15};
 
     private static final int[][] matrix1 = {
             {INF, 75, 52, 26, 68},
@@ -43,11 +43,11 @@ public class Test {
     };
 
     private static final int[][] matrix3 = {
-            {INF, 75, 52, 26, 68},
-            {69, INF, 92, 87, 82},
-            {25, 70, INF, 79, 96},
-            {77, 68, 31, INF, 31},
-            {46, 76, 47, 63, INF}
+            {INF, 63, 41, 80, 22},
+            {77, INF, 47, 55, 33},
+            {83, 63, INF, 52, 12},
+            {8, 44, 51, INF, 58},
+            {62, 28, 4, 17, INF}
     };
 
     private PrintWriter printWriter;
@@ -61,26 +61,25 @@ public class Test {
 
     public Test() throws FileNotFoundException {
         prepareTest();
-        //for (int size : SIZES) {
-        int size = matrix3.length;
-        int[] sol1 = null;
-        int[] sol2 = null;
+        for (int size : SIZES) {
+            int[] sol1 = null;
+            int[] sol2 = null;
+            int[][] baseMap = mapLoader.generate(size);
             int repetition = REPETITIONS;
-        int[][] baseMap = matrix3;//mapLoader.generate(size);
             long bnbTime = 0;
             long fcTime = 0;
-        Instant startbab = Instant.now();
-        sol1 = branchAndBound.performAlgorithm(baseMap);
-        Instant endbab = Instant.now();
-        bnbTime += Duration.between(startbab, endbab).toNanos();
-        Instant startfc = Instant.now();
-        sol2 = fullCheck.performAlgorithm(baseMap);
-        Instant endfc = Instant.now();
-        fcTime += Duration.between(startfc, endfc).toNanos();
-        printWriter.write(size + " bnb " + ((double) bnbTime / (double) REPETITIONS) + " " + sol1 + "\n");
-        printWriter.write(size + " fc " + ((double) fcTime / (double) REPETITIONS) + " " + sol2 + "\n");
+            Instant startbab = Instant.now();
+            sol1 = branchAndBound.performAlgorithm(baseMap);
+            Instant endbab = Instant.now();
+            bnbTime += Duration.between(startbab, endbab).toNanos();
+            Instant startfc = Instant.now();
+            sol2 = fullCheck.performAlgorithm(baseMap);
+            Instant endfc = Instant.now();
+            fcTime += Duration.between(startfc, endfc).toNanos();
+            printWriter.write(size + " bnb " + ((double) bnbTime / (double) REPETITIONS) + " " + sol1 + "\n");
+            printWriter.write(size + " fc " + ((double) fcTime / (double) REPETITIONS) + " " + sol2 + "\n");
             printWriter.flush();
-        //}
+        }
     }
 
     private void prepareTest() throws FileNotFoundException {

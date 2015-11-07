@@ -5,18 +5,15 @@ package models;
  */
 public class Node {
 
-    public int[][] original;
-    public int[][] reduced;
+    public int[][] matrix;
 
     public Edge[] solution;
     public int[] nodeUnion;
-
+    public int added = 0;
     public float lowerBound;
-    public boolean leftChild;
 
     public Node(final int[][] matrix) {
-        this.original = matrix;
-        leftChild = false;
+        this.matrix = matrix;
         lowerBound = 0;
     }
 
