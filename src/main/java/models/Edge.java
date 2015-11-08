@@ -7,7 +7,7 @@ public class Edge {
 
     public int startVertex;
     public int endVertex;
-    public int weight;
+    public int weight = 0;
 
     @Override
     public boolean equals(Object obj) {

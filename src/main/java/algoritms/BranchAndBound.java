@@ -23,7 +23,7 @@ public class BranchAndBound {
             final float upperBound = getUpperBound();
             final Node currentNode = nodePool.popBestAndRemoveWorseThan(upperBound);
             if (currentNode == null) {
-                continue;
+                break;
             }
             branch(currentNode);
         } while (!nodePool.isEmpty());
@@ -58,9 +58,11 @@ public class BranchAndBound {
 
     private void branch(final Node currentNode) {
         final Edge point = computeExcluded(currentNode.matrix);
-        currentNode.matrix[point.startVertex][point.endVertex] = INF;
-        computeAndAddChildWithoutEdge(currentNode, point);
-        computeAndAddChildWithEdge(currentNode, point);
+        if (point.weight < INF) { //można dalej branchować
+            currentNode.matrix[point.startVertex][point.endVertex] = INF;
+            computeAndAddChildWithoutEdge(currentNode, point);
+            computeAndAddChildWithEdge(currentNode, point);
+        }
     }
 
     private void computeAndAddChildWithEdge(final Node childWithEdge, Edge point) {
@@ -97,7 +99,7 @@ public class BranchAndBound {
     }
 
     private void markAsTaken(Edge point, Node childWithEdge) {
-        int[][] reduced = childWithEdge.matrix;
+        final int[][] reduced = childWithEdge.matrix;
         for(int rowCol = 0; rowCol < reduced.length; rowCol++) {
             reduced[rowCol][point.endVertex] = INF;
             reduced[point.startVertex][rowCol] = INF;
@@ -109,102 +111,81 @@ public class BranchAndBound {
         childWithEdge.solution[childWithEdge.added] = point;
         childWithEdge.added++;
         int setNumber = childWithEdge.union(point.startVertex, point.endVertex);
-        int startV = point.startVertex;
-        int endV = point.endVertex;
-        for (int i = 0; i < childWithEdge.added; i++) {
-            for (int j = 0; j < childWithEdge.added; j++) {
-                Edge edge = childWithEdge.solution[j];
-                if (childWithEdge.nodeUnion[edge.startVertex] == setNumber) {
-                    if (edge.endVertex == startV) {
-                        startV = edge.startVertex;
-                    }
-                    if (edge.startVertex == endV) {
-                        endV = edge.endVertex;
-                    }
-                }
-            }
-        }
-        childWithEdge.matrix[endV][startV] = INF;
+        //Zawsze zmieniamy numer unii na unię z kórego wychodzi krawedź
+        childWithEdge.matrix[childWithEdge.endEdges[setNumber]][setNumber] = INF;
     }
 
+    /**
+     * Dodaje do puli rozwiązanie bez danej krawędzi
+     */
     public void computeAndAddChildWithoutEdge(final Node currentNode, Edge point) {
         Node childWithoutEdge = new Node(Utils.cloneArray(currentNode.matrix));
         childWithoutEdge.lowerBound = point.weight + currentNode.lowerBound;
-        childWithoutEdge.solution = new Edge[currentNode.solution.length];
-        System.arraycopy(currentNode.solution, 0, childWithoutEdge.solution, 0, currentNode.solution.length);
-        childWithoutEdge.nodeUnion = new int[currentNode.solution.length];
-        System.arraycopy(currentNode.nodeUnion, 0, childWithoutEdge.nodeUnion, 0, currentNode.nodeUnion.length);
-        computeLowerBoundFor(childWithoutEdge);
-        boolean possibleSolution = checkPossibilityForLeftChild(point, currentNode);
-        if (possibleSolution && (bestSolution == null || childWithoutEdge.lowerBound < getUpperBound())) {
+        childWithoutEdge.solution = Utils.cloneEdges(currentNode.solution);
+        childWithoutEdge.nodeUnion = Utils.cloneArray(currentNode.nodeUnion);
+        childWithoutEdge.endEdges = Utils.cloneArray(currentNode.endEdges);
+        if (bestSolution == null || childWithoutEdge.lowerBound < getUpperBound()) {
             nodePool.insert(childWithoutEdge);
         }
     }
 
-    private boolean checkPossibilityForLeftChild(Edge point, Node node) {
-        int otherWaysIn = 0;
-        int otherWaysOut = 0;
-        for(int rowCol = 0; rowCol < node.solution.length; rowCol++) {
-            if (node.matrix[point.startVertex][rowCol] < INF) {
-                otherWaysOut++;
-            }
-            if (node.matrix[rowCol][point.endVertex] < INF) {
-                otherWaysIn++;
-            }
-        }
-        return otherWaysIn > 0 && otherWaysOut > 0;
-    }
-
-
-    private int getEdgeCost(Edge point) {
-        return point.weight;
-    }
-
+    /**
+     * Przygotowanie algorytmu: inicjalizacje itd.
+     *
+     * @param matrix
+     */
     private void prepareAlgorithm(final int[][] matrix) {
         baseMatrix = Utils.cloneArray(matrix);
         Node node = new Node(Utils.cloneArray(matrix));
         node.solution = new Edge[matrix.length];
         node.nodeUnion = new int[matrix.length];
+        node.endEdges = new int[matrix.length];
         for (int i = 0; i < node.nodeUnion.length; i++) {
             node.nodeUnion[i] = i;
+            node.endEdges[i] = i;
         }
         computeLowerBoundFor(node);
         nodePool = new NodeList(node);
     }
 
-    private void computeLowerBoundFor(Node node) {
-        node.lowerBound += rowReduction(node.matrix);
+    private void computeLowerBoundFor(Node node) { //redukcja, której wynik dodaje się do aktualnej wartości ograniczenia
+        node.lowerBound += rowReduction(node.matrix); //dolnego
         node.lowerBound += columnReduction(node.matrix);
     }
 
     private Edge computeExcluded(int[][] matrix) {
         Edge result = new Edge();
+        result.weight = -1;
         for(int row = 0; row < matrix.length; row++) {
             for(int col = 0; col < matrix.length; col++) {
                 if(matrix[row][col] == 0) {
-                    matrix[row][col] = INF;
-                    int edgeCost = Utils.rowMin(matrix, row);
-                    edgeCost += Utils.columnMin(matrix, col);
-                    if (edgeCost > result.weight) {
+                    matrix[row][col] = INF; //zabezpieczenie przed braniem samego siebie
+                    int rowCost = Utils.rowMin(matrix, row);
+                    int colCost = Utils.columnMin(matrix, col); //pobieranie minimum z kolumny i wiersza
+                    int edgeCost = rowCost + colCost;
+                    if (rowCost < INF && colCost < INF && edgeCost > result.weight) { //szukanie największego kosztu
                         result.startVertex = row;
                         result.endVertex = col;
                         result.weight = edgeCost;
                     }
-                    matrix[row][col] = 0;
+                    matrix[row][col] = 0; //odbezpieczanie
                 }
             }
+        }
+        if (result.weight < 0) {
+            result.weight = INF;
         }
         return result;
     }
 
-    private int columnReduction(final int[][] matrix) {
+    private int columnReduction(final int[][] matrix) { //algorytm dla kolumn
         int result = 0;
         for(int col = 0; col < matrix.length; col++) {
-            int colMin = Utils.columnMin(matrix, col);
-            if (colMin != INF) {
+            int colMin = Utils.columnMin(matrix, col); //szukanie najmniejszej
+            if (colMin < INF) { //gdy inf, nie ma co redukować (INF = brak)
                 result += colMin;
                 for (int row = 0; row < matrix.length; row++) {
-                    if (matrix[row][col] < INF) {
+                    if (matrix[row][col] < INF) { //redukcja w kolumnie
                         matrix[row][col] -= colMin;
                     }
                 }
@@ -213,11 +194,11 @@ public class BranchAndBound {
         return result;
     }
 
-    private int rowReduction(final int[][] matrix) {
+    private int rowReduction(final int[][] matrix) { //patrz: columnReduction
         int result = 0;
         for(int row = 0; row < matrix.length; row++) {
             int rowMin = Utils.rowMin(matrix, row);
-            if (rowMin != INF) {
+            if (rowMin < INF) {
                 result += rowMin;
                 for (int col = 0; col < matrix.length; col++) {
                     if (matrix[row][col] < INF) {

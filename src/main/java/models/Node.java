@@ -9,7 +9,6 @@ public class Node {
 
     public Edge[] solution;
     public int[] nodeUnion;
-    public int[] startEdges;
     public int[] endEdges;
 
     public int added = 0;
@@ -20,15 +19,18 @@ public class Node {
         lowerBound = 0;
     }
 
+    /**
+     * Unia do rozpoznawania części rozwiązania i usuwania między nimi cykli
+     */
     public int union(int v1, int v2) {
         int cls1 = nodeUnion[v1];
         int cls2 = nodeUnion[v2];
-        int number = Math.min(cls1, cls2);
         for (int i = 0; i < nodeUnion.length; i++) {
-            if (nodeUnion[i] == cls1 || nodeUnion[i] == cls2) {
-                nodeUnion[i] = number;
+            if (nodeUnion[i] == cls2) {
+                nodeUnion[i] = cls1;
             }
         }
-        return number;
+        endEdges[cls1] = endEdges[cls2];
+        return cls1;
     }
 }
