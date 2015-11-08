@@ -74,7 +74,11 @@ public class Lab1 extends JFrame implements WindowListener {
     }
 
     private void printSolution(int[] solution) {
-        StringBuilder builder = new StringBuilder("Rozwiązanie: ");
+        int total = baseMap[solution[solution.length - 1]][solution[0]];
+        for (int i = 1; i < solution.length; i++) {
+            total += baseMap[solution[i - 1]][solution[i]];
+        }
+        StringBuilder builder = new StringBuilder("Rozwiązanie: ").append(total).append(" | ");
         for (int sol : solution) {
             builder.append(sol).append(" ");
         }

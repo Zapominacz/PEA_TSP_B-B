@@ -17,7 +17,6 @@ public class BranchAndBound {
 
     }
 
-
     public int[] performAlgorithm(final int[][] mapEntry) {
         prepareAlgorithm(mapEntry);
         do {

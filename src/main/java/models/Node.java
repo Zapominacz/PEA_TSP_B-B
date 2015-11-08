@@ -9,6 +9,9 @@ public class Node {
 
     public Edge[] solution;
     public int[] nodeUnion;
+    public int[] startEdges;
+    public int[] endEdges;
+
     public int added = 0;
     public float lowerBound;
 

@@ -14,7 +14,7 @@ import java.io.PrintWriter;
 public class Test {
     private final static int INF = Integer.MAX_VALUE;
     private static final int REPETITIONS = 100;
-    private static final int[] SIZES = {10, 100, 200, 500, 1000};
+    private static final int[] SIZES = {4, 5, 6, 7, 8, 9, 10, 11, 12};
 
     private static final int[][] matrix1 = {
             {INF, 75, 52, 26, 68},
